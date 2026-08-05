@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JavaBank</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">JB</span>
+    <span class="brand-name">JavaBank</span>
+  </div>
+  <div class="api-status" id="apiStatus">
+    <span class="dot" id="statusDot"></span>
+    <span id="statusText">Checking API…</span>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- Left: actions -->
+  <section class="panel">
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="open">Open Account</button>
+      <button class="tab" data-tab="deposit">Deposit</button>
+      <button class="tab" data-tab="withdraw">Withdraw</button>
+      <button class="tab" data-tab="transfer">Transfer</button>
+      <button class="tab" data-tab="statement">Statement</button>
+      <button class="tab" data-tab="admin">Admin</button>
+    </div>
+
+    <!-- Open Account -->
+    <form class="tab-panel active" id="form-open" data-form="open">
+      <h2>Open a new account</h2>
+      <label>Account type
+        <select name="type">
+          <option value="SAVINGS">Savings — min balance 500, earns interest</option>
+          <option value="CURRENT">Current — overdraft up to 5000, monthly fee</option>
+        </select>
+      </label>
+      <label>Holder name
+        <input type="text" name="holderName" placeholder="Jane Doe" required>
+      </label>
+      <label>4-digit PIN
+        <input type="password" name="pin" maxlength="4" inputmode="numeric" placeholder="••••" required>
+      </label>
+      <label>Opening balance
+        <input type="number" name="openingBalance" min="0" step="0.01" placeholder="1000.00" required>
+      </label>
+      <button type="submit" class="primary">Open account</button>
+    </form>
+
+    <!-- Deposit -->
+    <form class="tab-panel" id="form-deposit" data-form="deposit">
+      <h2>Deposit funds</h2>
+      <label>Account number
+        <input type="text" name="accountNumber" placeholder="ACC100000" required>
+      </label>
+      <label>PIN
+        <input type="password" name="pin" maxlength="4" inputmode="numeric" required>
+      </label>
+      <label>Amount
+        <input type="number" name="amount" min="0.01" step="0.01" required>
+      </label>
+      <button type="submit" class="primary">Deposit</button>
+    </form>
+
+    <!-- Withdraw -->
+    <form class="tab-panel" id="form-withdraw" data-form="withdraw">
+      <h2>Withdraw funds</h2>
+      <label>Account number
+        <input type="text" name="accountNumber" placeholder="ACC100000" required>
+      </label>
+      <label>PIN
+        <input type="password" name="pin" maxlength="4" inputmode="numeric" required>
+      </label>
+      <label>Amount
+        <input type="number" name="amount" min="0.01" step="0.01" required>
+      </label>
+      <button type="submit" class="primary">Withdraw</button>
+    </form>
+
+    <!-- Transfer -->
+    <form class="tab-panel" id="form-transfer" data-form="transfer">
+      <h2>Transfer between accounts</h2>
+      <label>From account
+        <input type="text" name="fromAccountNumber" placeholder="ACC100000" required>
+      </label>
+      <label>PIN
+        <input type="password" name="pin" maxlength="4" inputmode="numeric" required>
+      </label>
+      <label>To account
+        <input type="text" name="toAccountNumber" placeholder="ACC100001" required>
+      </label>
+      <label>Amount
+        <input type="number" name="amount" min="0.01" step="0.01" required>
+      </label>
+      <button type="submit" class="primary">Transfer</button>
+    </form>
+
+    <!-- Statement / balance lookup -->
+    <form class="tab-panel" id="form-statement" data-form="statement">
+      <h2>Balance &amp; statement</h2>
+      <label>Account number
+        <input type="text" name="accountNumber" placeholder="ACC100000" required>
+      </label>
+      <label>PIN
+        <input type="password" name="pin" maxlength="4" inputmode="numeric" required>
+      </label>
+      <button type="submit" class="primary">Look up</button>
+    </form>
+
+    <!-- Admin -->
+    <div class="tab-panel" id="form-admin" data-form="admin">
+      <h2>Admin</h2>
+      <p class="muted">List every account in the bank, or run month-end processing (applies interest to savings accounts and maintenance fees to current accounts).</p>
+      <div class="button-row">
+        <button type="button" class="secondary" id="btnListAccounts">List all accounts</button>
+        <button type="button" class="secondary" id="btnMonthEnd">Run month-end</button>
+      </div>
+      <div id="accountsList" class="accounts-list"></div>
+    </div>
+  </section>
+
+  <!-- Right: result / statement view -->
+  <section class="panel result-panel">
+    <h2>Result</h2>
+    <div id="resultBox" class="result-box empty">
+      <p class="muted">Submit a form on the left to see the response here.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  JavaBank — a demo full-stack banking application. Not a real financial institution.
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

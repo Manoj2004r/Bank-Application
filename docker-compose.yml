@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  backend:
+    build: ./backend
+    container_name: javabank-backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - bank-data:/app/data
+    environment:
+      - PORT=8080
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: javabank-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  bank-data:
