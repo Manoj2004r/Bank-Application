@@ -5,11 +5,11 @@ services:
     build: ./backend
     container_name: javabank-backend
     ports:
-      - "8080:8080"
+      - "8000:8000"
     volumes:
       - bank-data:/app/data
     environment:
-      - PORT=8080
+      - PORT=8000
     restart: unless-stopped
 
   frontend:

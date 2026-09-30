@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: bank-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec: 
+      containers:
+        - name: backend
+          image: bank-application-backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+
+          env:
+            - name: PORT
+              value: "8000"
+
+          volumeMounts:
+            - name: bank-data
+              mountPath: /app/data
+
+      volumes:
+        - name: bank-data
+          persistentVolumeClaim:
+            claimName: bank-data-pvc

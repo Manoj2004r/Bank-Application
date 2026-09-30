@@ -32,7 +32,8 @@ import java.util.StringJoiner;
 public class ApiServer {
     private static final String DATA_FILE = "data/bank.dat";
     private static Bank bank;
-
+    private static long totalRequests = 0;
+    private static long totalErrors = 0;
     public static void main(String[] args) throws IOException {
         bank = loadBank();
 
@@ -43,13 +44,15 @@ public class ApiServer {
         }
 
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-        server.createContext("/api/", ApiServer::route);
+        server.createContext("/", ApiServer::route);
         server.setExecutor(null);
         server.start();
         System.out.println("JavaBank API listening on port " + port);
     }
 
     private static void route(HttpExchange ex) throws IOException {
+        totalRequests++;
+
         String method = ex.getRequestMethod();
         String path = ex.getRequestURI().getPath();
         String query = ex.getRequestURI().getQuery();
@@ -66,7 +69,10 @@ public class ApiServer {
         try {
             String[] parts = path.split("/");
             // path like /api/accounts/ACC100000/deposit -> ["", "api", "accounts", "ACC100000", "deposit"]
-
+            if (path.equals("/metrics")) {
+                sendMetrics(ex);
+                return;
+            }
             if (path.equals("/api/health")) {
                 sendJson(ex, 200, "{" + Json.str("status", "ok") + "}");
                 return;
@@ -117,6 +123,7 @@ public class ApiServer {
         } catch (IllegalArgumentException e) {
             sendError(ex, 400, e.getMessage());
         } catch (Exception e) {
+            totalErrors++;
             sendError(ex, 500, "Internal error: " + e.getMessage());
         }
     }
@@ -350,4 +357,32 @@ public class ApiServer {
             System.out.println("Warning: failed to save data: " + e.getMessage());
         }
     }
+
+    private static void sendMetrics(HttpExchange ex) throws IOException {
+    	String metrics =
+            "# HELP bank_http_requests_total Total HTTP requests\n" +
+            "# TYPE bank_http_requests_total counter\n" +
+            "bank_http_requests_total " + totalRequests + "\n" +
+
+            "# HELP bank_http_errors_total Total HTTP errors\n" +
+            "# TYPE bank_http_errors_total counter\n" +
+            "bank_http_errors_total " + totalErrors + "\n" +
+
+            "# HELP bank_accounts_total Total bank accounts\n" +
+            "# TYPE bank_accounts_total gauge\n" +
+            "bank_accounts_total " + bank.allAccounts().size() + "\n";
+
+    	ex.getResponseHeaders().set(
+            "Content-Type",
+            "text/plain; version=0.0.4"
+    );
+
+    byte[] bytes = metrics.getBytes(StandardCharsets.UTF_8);
+
+    ex.sendResponseHeaders(200, bytes.length);
+
+    try (var os = ex.getResponseBody()) {
+        os.write(bytes);
+    }
+}
 }

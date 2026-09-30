@@ -1,7 +1,7 @@
 // Base URL of the backend API. When running via docker-compose, the
 // backend is published on the host at localhost:8080 (the browser talks
 // to it directly, not through the Docker network).
-const API_BASE = window.API_BASE_URL || "http://localhost:8080";
+const API_BASE = window.API_BASE_URL || "/api";
 
 const resultBox = document.getElementById("resultBox");
 const statusDot = document.getElementById("statusDot");
@@ -20,7 +20,7 @@ document.querySelectorAll(".tab").forEach(tab => {
 // ---------- API health check ----------
 async function checkHealth() {
   try {
-    const res = await fetch(`${API_BASE}/api/health`);
+    const res = await fetch(`${API_BASE}/health`);
     if (res.ok) {
       statusDot.className = "dot ok";
       statusText.textContent = "API connected";
