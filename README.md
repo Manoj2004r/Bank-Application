@@ -1,63 +1,142 @@
 # JavaBank — Full-Stack Banking Application
 
-A complete full-stack banking demo: a Java REST API backend and a
-vanilla HTML/CSS/JS frontend, containerized with Docker.
+A full-stack banking demo built with a lightweight Java REST API and a vanilla HTML, CSS, and JavaScript frontend. The project demonstrates object-oriented programming, REST API development, Docker containerization, Kubernetes orchestration, and infrastructure observability with Prometheus and Grafana.
 
-## Stack
+> **Disclaimer:** JavaBank is an educational demo, not a production banking system. Do not use real customer information, account credentials, or financial data.
 
-- **Backend:** Plain Java (JDK 21), using `com.sun.net.httpserver.HttpServer`
-  for the REST API — **zero external dependencies**, so the Docker build
-  never needs to download a Maven/Gradle dependency tree.
-- **Frontend:** Static HTML/CSS/JS single-page app, served by nginx.
-- **Persistence:** Java object serialization to a file (`data/bank.dat`),
-  stored in a Docker named volume so data survives container restarts.
-- **Orchestration:** `docker-compose.yml` wires backend + frontend together.
+## Architecture
 
-## Project structure
+The frontend is hosted on Amazon S3 in the deployed environment and communicates with the backend through its configured API endpoint. The backend can be containerized and orchestrated using Docker Compose or Kubernetes. Prometheus and Grafana provide monitoring for the Kubernetes environment.
 
+```text
+                         User / Browser
+                               |
+                               v
+                      Amazon S3 Frontend
+                       (HTML / CSS / JS)
+                               |
+                               | REST API requests
+                               v
+                         Java REST API
+                         (JDK 21)
+                               |
+                               v
+                     File-Based Persistence
+                         bank.dat file
+                               |
+                               v
+                    Docker Volume / Storage
+
+
+                 Kubernetes Observability
+                               |
+                     +---------+---------+
+                     |                   |
+                     v                   v
+                 Prometheus            Grafana
+                 Metrics               Dashboards
 ```
-JavaBankFullStack/
+
+The storage and deployment paths depend on the environment. The Docker Compose setup uses a named volume for persistence. Verify the Kubernetes storage configuration separately before assuming that data persists across pod replacements.
+
+## Technology Stack
+
+| Category | Technologies |
+|---|---|
+| Backend | Java, JDK 21, `HttpServer` |
+| Frontend | HTML5, CSS3, JavaScript |
+| Persistence | Java object serialization |
+| Containerization | Docker |
+| Local orchestration | Docker Compose |
+| Container orchestration | Kubernetes |
+| Monitoring | Prometheus |
+| Dashboards | Grafana |
+| Frontend hosting | Amazon S3 |
+
+## Features
+
+- Open savings and current accounts
+- Deposit and withdraw funds
+- Transfer funds between accounts
+- Retrieve account balances
+- View transaction statements
+- Close eligible accounts
+- Apply monthly interest and fees
+- Check API health
+- Persist account data to a file in the Docker Compose environment
+
+## Application Design
+
+The backend uses plain Java and the built-in `com.sun.net.httpserver.HttpServer` for HTTP handling, without external application-framework or JSON-library dependencies.
+
+Key classes include:
+
+- `Account` — abstract base class for account behavior
+- `SavingsAccount` — savings-account rules and monthly interest
+- `CurrentAccount` — current-account overdraft and fee behavior
+- `Transaction` — transaction ledger entries
+- `Bank` — account registry, business logic, and persistence
+- `ApiServer` — REST API entry point
+- `Json` — lightweight JSON parsing and serialization helper
+
+The application demonstrates object-oriented principles, including abstraction, inheritance, polymorphism, and exception handling.
+
+## Repository Structure
+
+```text
+Bank-Application/
 ├── backend/
 │   ├── src/
-│   │   ├── Account.java              (abstract base class)
-│   │   ├── SavingsAccount.java       (min balance, monthly interest)
-│   │   ├── CurrentAccount.java       (overdraft, monthly fee)
-│   │   ├── Transaction.java          (ledger entry)
-│   │   ├── Bank.java                 (account registry + persistence)
-│   │   ├── ApiServer.java            (REST API + main method)
-│   │   ├── Json.java                 (minimal JSON parse/serialize helper)
-│   │   ├── InsufficientFundsException.java
-│   │   └── NoSuchAccountException.java
 │   └── Dockerfile
 ├── frontend/
 │   ├── index.html
 │   ├── style.css
 │   ├── app.js
 │   └── Dockerfile
+├── k8s/
+│   └── Kubernetes manifests
 ├── docker-compose.yml
+├── .gitignore
 └── README.md
 ```
 
-## Running with Docker (recommended)
+## Run Locally with Docker Compose
 
-From the project root:
+**Prerequisites:** Docker and Docker Compose.
+
+From the project root, run:
 
 ```bash
 docker compose up --build
 ```
 
-- Frontend: **http://localhost:3000**
-- Backend API: **http://localhost:8080**
+Default local endpoints:
 
-Data persists in the `bank-data` Docker volume between restarts. To wipe it:
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:8080`
+- Health check: `http://localhost:8080/api/health`
+
+The `bank-data` named Docker volume stores the serialized bank data across container restarts, provided the volume is retained.
+
+To stop the services:
+
+```bash
+docker compose down
+```
+
+To remove the Compose-managed volume as well, use:
 
 ```bash
 docker compose down -v
 ```
 
-## Running without Docker
+**Warning:** Removing the volume deletes the bank data stored in it.
 
-**Backend** (requires JDK 21+):
+## Run Without Docker
+
+### Backend
+
+Requires JDK 21 or later.
 
 ```bash
 cd backend
@@ -65,65 +144,89 @@ javac -d out src/*.java
 java -cp out ApiServer
 ```
 
-The API listens on port `8080` by default (override with the `PORT`
-environment variable).
+The API listens on port `8080` by default. The port can be overridden using the `PORT` environment variable.
 
-**Frontend:** just open `frontend/index.html` in a browser, or serve the
-folder with any static file server, e.g.:
+### Frontend
+
+Open `frontend/index.html` in a browser or serve the frontend directory using a static file server:
 
 ```bash
 cd frontend
 python3 -m http.server 3000
 ```
 
-Then visit `http://localhost:3000`. The frontend calls the backend at
-`http://localhost:8080` by default — edit `API_BASE` at the top of
-`app.js` if your backend runs elsewhere.
+Visit `http://localhost:3000`.
 
-## API reference
+The frontend's `API_BASE` setting must point to the address where the backend is reachable from the browser.
 
-| Method | Path                                | Body / Query                                        | Description                            |
-|--------|--------------------------------------|-------------------------------------------------------|------------------------------------------|
-| GET    | `/api/health`                        | —                                                       | Health check                              |
-| GET    | `/api/accounts`                      | —                                                       | List all accounts                         |
-| POST   | `/api/accounts`                      | `{type, holderName, pin, openingBalance}`               | Open a new account                        |
-| GET    | `/api/accounts/{accNum}/balance`     | `?pin=`                                                 | Get balance                               |
-| GET    | `/api/accounts/{accNum}/statement`   | `?pin=`                                                 | Full transaction history                  |
-| POST   | `/api/accounts/{accNum}/deposit`     | `{pin, amount}`                                         | Deposit funds                             |
-| POST   | `/api/accounts/{accNum}/withdraw`    | `{pin, amount}`                                         | Withdraw funds                            |
-| POST   | `/api/transfer`                      | `{fromAccountNumber, toAccountNumber, pin, amount}`      | Transfer between accounts                 |
-| POST   | `/api/monthend`                      | —                                                       | Apply interest/fees to all accounts       |
-| DELETE | `/api/accounts/{accNum}`             | `?pin=`                                                 | Close an account (must be zero balance)   |
+## Kubernetes Deployment
 
-`type` is `SAVINGS` or `CURRENT`. All error responses are
-`{"error": "message"}` with an appropriate HTTP status code (400/401/404/409).
+Kubernetes manifests are maintained in the `k8s/` directory.
 
-### Example: open an account and deposit
+The Kubernetes deployment work demonstrates container orchestration and management of application workloads.
 
-```bash
-curl -X POST http://localhost:8080/api/accounts \
-  -H "Content-Type: application/json" \
-  -d '{"type":"SAVINGS","holderName":"Jane Doe","pin":"1234","openingBalance":1000}'
+When deploying, verify the following:
 
-# -> {"accountNumber":"ACC100000","holderName":"Jane Doe","type":"SAVINGS","balance":1000.0}
+- Deployment image names and tags
+- Service types and port mappings
+- Frontend-to-backend API connectivity
+- Environment variables and configuration
+- Health probes and resource requests or limits
+- Persistent storage for `bank.dat`, if data must survive pod replacement
 
-curl -X POST http://localhost:8080/api/accounts/ACC100000/deposit \
-  -H "Content-Type: application/json" \
-  -d '{"pin":"1234","amount":250}'
-```
+The Kubernetes deployment should be configured and tested against the actual manifests in the repository.
 
-## Design notes
+## Monitoring and Observability
 
-- `Account` is abstract; `SavingsAccount` and `CurrentAccount` override
-  `canWithdraw()`, `accountType()`, and `applyMonthlySchedule()` — a
-  polymorphism example carried over from the original console version.
-- `Bank.transfer()` always withdraws from the source first and throws
-  before crediting the destination, so a failed transfer never leaves
-  money "created" on the receiving side.
-- PIN checks are done server-side on every mutating and read
-  operation. This is a demo app — PINs are not hashed and there's no
-  session/token auth, so don't reuse this for anything real.
-- The backend intentionally avoids frameworks (Spring, etc.) and
-  external JSON libraries so the whole thing builds offline once the
-  base Docker images are pulled — useful in restricted network
-  environments.
+Prometheus and Grafana are used to monitor Kubernetes resources and visualize metrics.
+
+The Grafana dashboard includes views for:
+
+- Cluster CPU utilization
+- Cluster memory utilization
+- CPU and memory usage by namespace
+- Kubernetes resource counts
+- Node and running pod counts
+
+Prometheus collects metrics, while Grafana presents them in dashboards. These tools help demonstrate observability practices for containerized workloads.
+
+## REST API Reference
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/health` | Health check |
+| GET | `/api/accounts` | List accounts |
+| POST | `/api/accounts` | Open an account |
+| GET | `/api/accounts/{accNum}/balance?pin=` | Get account balance |
+| GET | `/api/accounts/{accNum}/statement?pin=` | Retrieve transaction history |
+| POST | `/api/accounts/{accNum}/deposit` | Deposit funds |
+| POST | `/api/accounts/{accNum}/withdraw` | Withdraw funds |
+| POST | `/api/transfer` | Transfer funds |
+| POST | `/api/monthend` | Apply monthly interest and fees |
+| DELETE | `/api/accounts/{accNum}?pin=` | Close an eligible account |
+
+The account-opening request accepts `type`, `holderName`, `pin`, and `openingBalance`. Account types are `SAVINGS` and `CURRENT`.
+
+## Security Considerations
+
+This application is intended for learning and demonstration.
+
+- Account PINs are not hashed in the current implementation.
+- The application does not implement session-based or token-based authentication.
+- Avoid exposing the API publicly without appropriate authentication and transport security.
+- Do not commit credentials, real account data, or sensitive environment files.
+- Review Kubernetes network exposure and permissions before deployment.
+- Treat file-based persistence and serialized data as application data that requires appropriate protection.
+
+## Future Improvements
+
+- Build automated CI/CD pipelines with Jenkins.
+- Add alerting for application errors and resource pressure.
+- Improve authentication and secure PIN handling.
+- Add automated tests for account operations and API endpoints.
+- Implement robust persistent storage for Kubernetes deployments.
+- Explore GitOps-based deployment workflows using Argo CD or Flux.
+
+## Learning Outcomes
+
+This project brings together Java programming, REST API design, Docker, Kubernetes, and monitoring. It provides a practical foundation for further work in DevOps, cloud engineering, deployment automation, and observability.
